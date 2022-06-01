@@ -1,3 +1,3 @@
 # DSU-S2022-Kpop&BTS
 
-Link to our Medium article coming soon!
+Check out our [Medium article](https://medium.com/@ucladsu/40284399948f)!
