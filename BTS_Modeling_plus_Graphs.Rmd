@@ -1,0 +1,438 @@
+---
+title: "BTS_Modeling1"
+author: "Chelsea Chen"
+date: "5/31/2022"
+output: pdf_document
+---
+
+# Libraries required to load
+
+```{r}
+library(randomForest)
+```
+
+# Loading Datasets - Training, Validation, Testing
+
+```{r}
+# setting working directory for datasets
+# setwd("C:/Users/chenc/Desktop/dsu/bts-project")
+
+# training data is for building the models
+train <- read.csv("train.csv")
+
+# validation is for validating model accuracy
+validation <- read.csv("validation.csv")
+
+# test is for testing all the models against each other
+test <- read.csv("test.csv")
+```
+
+Some variables such as track ID or album name are irrelevant for us in terms of modeling, so we may remove them to just work with the 13 predictors.
+
+```{r}
+# some variables are irrelevant for our modeling
+head(train)
+# first 5 columns aren't v relevant / give useful info for our case 
+
+# removing first 5 columns
+train <- train[,-(1:5)]
+validation <- validation[, -(1:5)]
+test <- test[, -(1:5)]
+head(train)
+```
+
+# Modeling Methods
+
+## Bagging 
+
+Load required libraries
+
+```{r}
+library(randomForest)
+```
+
+Some info on the parameters, m represents the number of predictors, in our case we have 13
+
+```{r}
+# mtry : m = p (no. of predictors) for bagging
+p <- ncol(train) - 1
+p # 13 predictors
+```
+
+### 500 trees
+```{r}
+# 500 trees: RMSE = 14.01276
+
+bagging500 <- randomForest(Y ~., data = train, mtry = 13, ntree = 500, importance = TRUE)
+bagging500
+
+
+# calc RMSE using validation data
+predictedY <- predict(bagging500, newdata = validation)
+mean((predictedY - validation$Y)^2)
+sqrt(mean((predictedY - validation$Y)^2))
+
+
+# calc MSE
+baggingtest <- test
+baggingtest$predict_500 <- predict(bagging500, newdata = test)
+```
+
+### 1000 trees
+```{r}
+#### 1000 trees: RMSE = 14.01264
+set.seed(123)
+bagging1000 <- randomForest(Y ~., data = train, mtry = 13, ntree = 1000, importance = TRUE)
+bagging1000
+
+predictedY <- predict(bagging1000, newdata = validation)
+mean((predictedY - validation$Y)^2)
+sqrt(mean((predictedY - validation$Y)^2))
+```
+
+```{r}
+baggingtest$predict_1000 <- predict(bagging1000, newdata = test)
+
+test_mse <- mean(((baggingtest$Y - baggingtest$predict_1000)^2))
+sqrt(test_mse)
+```
+
+### 1500 trees
+```{r}
+#### 1500 trees: RMSE = 14.01004
+set.seed(123)
+bagging1500 <- randomForest(Y ~., data = train, mtry = 13, ntree = 1500, importance = TRUE)
+bagging1500
+
+predictedY <- predict(bagging1500, newdata = validation)
+mean((predictedY - validation$Y)^2)
+sqrt(mean((predictedY - validation$Y)^2))
+```
+
+### 2000 trees
+```{r}
+#### 2000 trees: RMSE = 14.00195
+set.seed(123)
+bagging2000 <- randomForest(Y ~., data = train, mtry = 13, ntree = 2000, importance = TRUE)
+bagging2000
+
+predictedY <- predict(bagging2000, newdata = validation)
+mean((predictedY - validation$Y)^2)
+sqrt(mean((predictedY - validation$Y)^2))
+```
+
+### 5000 trees
+```{r}
+#### 5000 trees: RMSE = 14.00494
+set.seed(123)
+bagging5000 <- randomForest(Y ~., data = train, mtry = 13, ntree = 5000, importance = TRUE)
+bagging5000
+
+predictedY <- predict(bagging5000, newdata = validation)
+mean((predictedY - validation$Y)^2)
+sqrt(mean((predictedY - validation$Y)^2))
+```
+
+## Random Forests Method
+
+Load required library
+
+```{r}
+library(randomForest)
+```
+
+Here we will find the validation RMSE for each m parameter, then use the m with the lowest RMSE. We do this process for each tree number
+
+### 500 trees
+```{r}
+#### 500 trees: when m = 3, RMSE = X
+set.seed(123)
+
+# Find validation RMSE for each m, and take m with the lowest RMSE
+
+# storing all the models in a list so we can use them later for predicting if wanting to
+
+rf500 <- list()
+
+# prints out RMSE for each m value so we can identify the lowest one
+for (i in seq_len(13)) {
+  rf500[[i]] <- randomForest(Y ~., data = train, 
+                               mtry = i, ntree = 500, 
+                                      importance = TRUE)
+  predictedY <- predict(rf500[[i]], newdata = validation)
+  rmse <- sqrt(mean((predictedY - validation$Y)^2))
+  print(paste0("When m = ", i, ", the validation RMSE is ", rmse), quote = FALSE)
+}
+```
+
+When m = 3, RMSE is lowest
+
+### 1000 trees
+```{r}
+#### 1000 trees: when m = 4, RMSE = 13.94
+set.seed(123)
+
+rf1000 <- list()
+
+for (i in seq_len(13)) {
+  rf1000[[i]] <- randomForest(Y ~., data = train, 
+                               mtry = i, ntree = 1000, 
+                                      importance = TRUE)
+  predictedY <- predict(rf1000[[i]], newdata = validation)
+  rmse <- sqrt(mean((predictedY - validation$Y)^2))
+  print(paste0("When m = ", i, ", the validation RMSE is ", rmse), quote = FALSE)
+}
+
+```
+m = 4; rmse = 13.9394943633929
+
+### 1500 trees
+
+```{r}
+#### 1500 trees: when m = 3, RMSE = 13.939
+set.seed(123)
+
+rf1500 <- list()
+for (i in 1:12) {
+  rf1500[[i]] <- randomForest(Y ~., data = train, 
+                               mtry = i, ntree = 1500, 
+                                      importance = TRUE)
+  predictedY <- predict(rf1500[[i]], newdata = validation)
+  rmse <- sqrt(mean((predictedY - validation$Y)^2))
+  print(paste0("When m = ", i, ", the validation RMSE is ", rmse), quote = FALSE)
+}
+```
+m = 3; rmse = 13.9393947737853
+
+```{r}
+#### 2000 trees: when m = X, RMSE = X
+set.seed(123)
+
+rf2000 <- list()
+
+for (i in 1:12) {
+  rf2000[[i]] <- randomForest(Y ~., data = train, 
+                               mtry = i, ntree = 2000, 
+                                      importance = TRUE)
+  predictedY <- predict(rf2000[[i]], newdata = validation)
+  rmse <- sqrt(mean((predictedY - validation$Y)^2))
+  print(paste0("When m = ", i, ", the validation RMSE is ", rmse), quote = FALSE)
+}
+```
+m = 3; rmse = 13.9222589054928
+
+```{r}
+#### 5000 trees: when m = X, RMSE = X
+set.seed(123)
+
+for (i in 1:12) {
+  randomforest <- randomForest(Y ~., data = train, 
+                               mtry = i, ntree = 5000, 
+                                      importance = TRUE)
+  predictedY <- predict(randomforest, newdata = validation)
+  rmse <- sqrt(mean((predictedY - validation$Y)^2))
+  print(paste0("When m = ", i, ", the validation RMSE is ", rmse), quote = FALSE)
+}
+```
+
+
+## Ridge Regression Method
+
+Load required libraries
+
+```{r}
+library(glmnet)
+```
+
+
+```{r}
+x_train <- model.matrix(Y ~., data = train)[, -1] # get rid of the intercept column
+y_train <- train$Y
+x_test <- model.matrix(Y ~., data = validation)[, -1]
+
+# Define possible lambda values
+set.seed(123)
+grid <- 10^seq(10, -2, length = 100)
+
+# Fit ridge regression model
+m_ridge <- glmnet(x_train, y_train, family = "gaussian", alpha = 0, 
+                    lambda = grid, standardize = TRUE)
+
+cv.output <- cv.glmnet(x_train, y_train, family = "gaussian", alpha = 0, 
+                       lambda = grid, standardize = TRUE)
+
+# Retrieve the best value of lambda
+best.lambda <- cv.output$lambda.min
+
+# validation RMSE
+predictedY_ridge <- predict(m_ridge, s = best.lambda, newx = x_test)
+mse <- mean((validation$Y - predictedY_ridge)^2)
+sqrt(mse)
+```
+RMSE = 14.87354 for Ridge regression.
+
+
+## Boosting
+
+### METHOD 1 - GBM + CARET: Stochastic Gradient Boosting
+```{r}
+library(caret)
+library(gbm)
+```
+
+
+``` {r}
+set.seed(123)
+
+# 10-fold CV
+train_control <- trainControl(method = "cv", number = 10, 
+                              classProbs = TRUE, 
+                              savePredictions = TRUE)
+
+# grid
+
+#interaction depth = max depth of tree
+# shrinkage = learning rate
+
+gbmGrid <-  expand.grid(interaction.depth = c(1, 4, 5), 
+                        n.trees = (1:20)*500, 
+                        shrinkage = c(0.001, 0.01),
+                        n.minobsinnode = c(10, 15, 20))
+                        
+nrow(gbmGrid)
+
+# tune parameters (computationally expensive code below)
+set.seed(123)
+boosting <- train(Y ~ ., data = train, 
+                 method = "gbm", 
+                 trControl = train_control, 
+                 verbose = FALSE, 
+                 tuneGrid = gbmGrid)
+boosting$results %>% 
+  dplyr::arrange(RMSE) %>%
+  head(50)
+
+# Ideal parameters from grid search:
+# n.trees = 1500, interaction.depth = 5, shrinkage = 0.01 and n.minobsinnode = 10
+
+predictedY <- predict(boosting, newdata = validation)
+mse <- mean((predictedY - validation$Y)^2)
+sqrt(mse)
+# RMSE: X 
+```
+
+# Predictions for each model (Bagging and Random Forests)
+
+```{r}
+y_predict <- data.frame(matrix(NA, nrow = 853, ncol = 4))
+names(y_predict) <- data.frame("Bagging500", "Bagging1000", "Bagging1500", "Bagging2000")
+
+#nrow(y_predict) <- 853
+
+y_predict["Bagging500"] <- predict(bagging500, newdata = test)
+y_predict["Bagging1000"] <- predict(bagging1000, newdata = test)
+y_predict["Bagging1500"] <- predict(bagging1500, newdata = test)
+y_predict["Bagging2000"] <- predict(bagging2000, newdata = test)
+y_predict$RF500 <- predict(rf500[[3]], newdata = test)
+y_predict$RF1000 <- predict(rf1000[[3]], newdata = test)
+y_predict$RF1500 <- predict(rf1500[[3]], newdata = test)
+y_predict$RF2000 <- predict(rf2000[[3]], newdata = test)
+
+
+head(y_predict)
+```
+
+Export predictions into excel file for sharing
+
+```{r}
+#write.csv(y_predict, "y_predictions2.csv")
+```
+
+# Plotting Line Graph of Model Predictions vs Actual Scores
+
+We shall use ggplot <3
+
+```{r}
+library(ggplot2)
+# install.packages("Hmisc")
+# library(Hmisc)
+# code might not work unless u load Hmisc?
+```
+
+This dataset has the prediction scores for the test songs for all the models we collectively trained
+```{r}
+model_compare <- read.csv("Model_Comparison.csv")
+head(model_compare)
+```
+
+## Random Forest 500
+
+```{r}
+ggplot(data = model_compare, aes(x = RF500, y = Actual_Popularity)) + 
+  geom_point(size = 1) + # scatterplot
+  geom_smooth(method='lm') + # line of best fit
+  geom_abline(slope = 1, intercept = 0, colour = "red") +
+  xlab("Random Forest (500 trees) Predicted Popularity") +
+  ylab("Actual Popularity") +
+  ggtitle("Random Forest Predicted vs. Actual Popularity")
+```
+
+grey region displayed around the blue line is 95% confidence interval
+
+## Bagging 500
+
+```{r}
+ggplot(data = model_compare, aes(x = Bagging500, y = Actual_Popularity)) + 
+  geom_point(size = 1) + # scatterplot
+  geom_smooth(method='lm') + # line of best fit
+  geom_abline(slope = 1, intercept = 0, colour = "red")
+```
+
+## Bagging 1000
+
+```{r}
+ggplot(data = model_compare, aes(x = Bagging1000, y = Actual_Popularity)) + 
+  geom_point(size = 1) + # scatterplot
+  geom_smooth(method='lm') + # line of best fit
+  geom_abline(slope = 1, intercept = 0, colour = "red")+
+  xlab("Bagging (1000 trees) Predicted Popularity") +
+  ylab("Actual Popularity") +
+  ggtitle("Bagging (1000 trees) Predicted vs. Actual Popularity")
+```
+
+
+## Boosting
+
+```{r}
+ggplot(data = model_compare, aes(x = Boosting, y = Actual_Popularity)) + 
+  geom_point(size = 1) + # scatterplot
+  geom_smooth(method='lm') + # line of best fit
+  geom_abline(slope = 1, intercept = 0, colour = "red") +
+  xlab("Boosting Predicted Popularity") +
+  ylab("Actual Popularity") +
+  ggtitle("Boosting Predicted vs. Actual Popularity")
+```
+
+## Lasso Regression
+
+```{r}
+ggplot(data = model_compare, aes(x = Lasso_regression, y = Actual_Popularity)) + 
+  geom_point(size = 1) + # scatterplot
+  geom_smooth(method='lm') + # line of best fit
+  geom_abline(slope = 1, intercept = 0, colour = "red")+
+  xlab("Lasso Regression Predicted Popularity") +
+  ylab("Actual Popularity") +
+  ggtitle("Lasso Regression Predicted vs. Actual Popularity")
+```
+
+## Ridge Regression
+
+```{r}
+ggplot(data = model_compare, aes(x = Ridge_regression, y = Actual_Popularity)) + 
+  geom_point(size = 1) + # scatterplot
+  geom_smooth(method='lm') + # line of best fit
+  geom_abline(slope = 1, intercept = 0, colour = "red")+
+  xlab("Ridge Regression Predicted Popularity") +
+  ylab("Actual Popularity") +
+  ggtitle("Ridge Regression Predicted vs. Actual Popularity")
+```
