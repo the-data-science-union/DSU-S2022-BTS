@@ -1,0 +1,64 @@
+---
+title: "Kpop_model_comparison"
+author: "Julia Martin"
+date: "5/23/2022"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+rename(testing12, Boosting_Prediction = pred)
+Boosting = data.frame(testing12[15])
+Boosting
+rename(Boosting, Boosting = pred)
+testing12[14]
+```
+
+```{r}
+predictions <- read.csv("predictedYs.csv")
+predictions_full <- cbind(predictions, Boosting)
+predictions_full
+predictions_final <- predictions_full[,-6]
+predictions_final$Boosting <- predictions_final$pred
+predictions_ <- predictions_final[,-6]
+predictions__ <- cbind(predictions_, testing12[14])
+predictions__ <- predictions__[, c(1,7,2,3,4,5,6)]
+names(predictions__)[names(predictions__) == 'Y'] <- 'Actual_Popularity'
+predictions__
+```
+```{r}
+names(predictions_full)[names(predictions_full) == 'pred'] <- 'Boosting'
+predictions_full
+predictions__ <- cbind(predictions_full, testing12[14])
+names(predictions__)[names(predictions__) == 'Y'] <- 'Actual_Popularity'
+predictions__
+```
+```{r}
+br <- read.csv("y_prediction.csv")
+predictions__ <- cbind(predictions__, br[,2:6])
+predictions__
+```
+
+
+```{r}
+for (x in 1:853) {
+  predictions__$rmse[x] <- sqrt(mean(c((predictions__$Lasso_regression[x] - predictions__$Actual_Popularity[x])^2,(predictions__$Ridge_regression[x] - predictions__$Actual_Popularity[x])^2, (predictions__$Single_tree[x] - predictions__$Actual_Popularity[x])^2, (predictions__$Pruned_tree[x] - predictions__$Actual_Popularity[x])^2, (predictions__$Boosting[x] - predictions__$Actual_Popularity[x])^2, (predictions__$Bagging500[x] - predictions__$Actual_Popularity[x])^2, (predictions__$Bagging1000[x] - predictions__$Actual_Popularity[x])^2, (predictions__$Bagging1500[x] - predictions__$Actual_Popularity[x])^2, (predictions__$Bagging2000[x] - predictions__$Actual_Popularity[x])^2, (predictions__$Bagging2000[x] - predictions__$Actual_Popularity[x])^2, (predictions__$RF500[x] - predictions__$Actual_Popularity[x])^2, (predictions__$RF1000[x] - predictions__$Actual_Popularity[x])^2, (predictions__$RF1500[x] - predictions__$Actual_Popularity[x])^2, (predictions__$RF2000[x] - predictions__$Actual_Popularity[x])^2)))
+}
+predictions__
+predictions__ <- predictions__[,-13]
+predictions__[order(predictions__$rmse, decreasing = F),]
+write.csv(predictions__, "Model_Comparison.csv")
+```
+
+```{r}
+more_rf <- read.csv("y_predictions2.csv")
+more_rf[,7:9]
+predictions_end <-  cbind(predictions__, more_rf[,7:9])
+predictions_end_1 <- predictions_end[,c(1,7,2,3,4,5,6,8,9,10,11,12,13,14,15)]
+predictions__ <- predictions_end_1
+```
+
+```{r}
+case <- read.csv("casestudies.csv")
+case[,c(3,4,15,17,18)]
+```
